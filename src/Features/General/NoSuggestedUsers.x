@@ -1,11 +1,33 @@
 #import "../../Utils.h"
 #import "../../InstagramHeaders.h"
 
+static inline BOOL SPKHideFeedSuggestedUsers(void) {
+    return [SPKUtils getBoolPref:@"general_hide_suggested_users_feed"];
+}
+
+static inline BOOL SPKHideProfileSuggestedUsers(void) {
+    return [SPKUtils getBoolPref:@"general_hide_suggested_users_profile"];
+}
+
+static inline BOOL SPKHideActivitySuggestedUsers(void) {
+    return [SPKUtils getBoolPref:@"general_hide_suggested_users_activity"];
+}
+
+static inline BOOL SPKHideFollowListSuggestedUsers(void) {
+    return [SPKUtils getBoolPref:@"general_hide_suggested_users_follow_lists"];
+}
+
+static inline BOOL SPKHideSubscriptionSuggestedUsers(void) {
+    return [SPKUtils getBoolPref:@"general_hide_suggested_users_subscriptions"];
+}
+
+%group SPKNoSuggestedUsersHooks
+
 // "Welcome to instagram" suggested users in feed
 %hook IGSuggestedUnitViewModel
 - (id)initWithAYMFModel:(id)arg1 headerViewModel:(id)arg2 {
-    if ([SCIUtils getBoolPref:@"no_suggested_users"]) {
-        NSLog(@"[SCInsta] Hiding suggested users: main feed welcome section");
+    if (SPKHideFeedSuggestedUsers()) {
+        SPKLog(@"General", @"[Sparkle] Hiding suggested users: main feed welcome section");
 
         return nil;
     }
@@ -13,10 +35,11 @@
     return %orig;
 }
 %end
+
 %hook IGSuggestionsUnitViewModel
 - (id)initWithAYMFModel:(id)arg1 headerViewModel:(id)arg2 {
-    if ([SCIUtils getBoolPref:@"no_suggested_users"]) {
-        NSLog(@"[SCInsta] Hiding suggested users: main feed welcome section");
+    if (SPKHideFeedSuggestedUsers()) {
+        SPKLog(@"General", @"[Sparkle] Hiding suggested users: main feed welcome section");
 
         return nil;
     }
@@ -34,9 +57,9 @@
     for (id obj in originalObjs) {
         BOOL shouldHide = NO;
 
-        if ([SCIUtils getBoolPref:@"no_suggested_users"]) {
+        if (SPKHideProfileSuggestedUsers()) {
             if ([obj isKindOfClass:%c(IGProfileChainingModel)]) {
-                NSLog(@"[SCInsta] Hiding suggested users: profile header");
+                SPKLog(@"General", @"[Sparkle] Hiding suggested users: profile header");
 
                 shouldHide = YES;
             }
@@ -64,9 +87,9 @@
         // Section header 
         if ([obj isKindOfClass:%c(IGLabelItemViewModel)]) {
             // Suggested for you
-            if ([[obj labelTitle] isEqualToString:@"Suggested for you"]) {
-                if ([SCIUtils getBoolPref:@"no_suggested_users"]) {
-                    NSLog(@"[SCInsta] Hiding suggested users (header: activity feed)");
+            if ([[obj valueForKey:@"tag"] intValue] == 2) { // 2 == Suggested Users
+                if (SPKHideActivitySuggestedUsers()) {
+                    SPKLog(@"General", @"[Sparkle] Hiding suggested users (header: activity feed)");
 
                     shouldHide = YES;
                 }
@@ -75,8 +98,8 @@
 
         // Suggested user
         else if ([obj isKindOfClass:%c(IGDiscoverPeopleItemConfiguration)]) {
-            if ([SCIUtils getBoolPref:@"no_suggested_users"]) {
-                NSLog(@"[SCInsta] Hiding suggested users: (user: activity feed)");
+            if (SPKHideActivitySuggestedUsers()) {
+                SPKLog(@"General", @"[Sparkle] Hiding suggested users: (user: activity feed)");
 
                 shouldHide = YES;
             }
@@ -84,8 +107,8 @@
 
         // "See all" button
         else if ([obj isKindOfClass:%c(IGSeeAllItemConfiguration)]) {
-            if ([SCIUtils getBoolPref:@"no_suggested_users"]) {
-                NSLog(@"[SCInsta] Hiding suggested users: (see all: activity feed)");
+            if (SPKHideActivitySuggestedUsers()) {
+                SPKLog(@"General", @"[Sparkle] Hiding suggested users: (see all: activity feed)");
 
                 shouldHide = YES;
             }
@@ -110,11 +133,11 @@
     for (IGStoryTrayViewModel *obj in originalObjs) {
         BOOL shouldHide = NO;
 
-        if ([SCIUtils getBoolPref:@"no_suggested_users"]) {
+        if (SPKHideFollowListSuggestedUsers()) {
 
             // Suggested user
             if ([obj isKindOfClass:%c(IGDiscoverPeopleItemConfiguration)]) {
-                NSLog(@"[SCInsta] Hiding suggested users: follow list suggested user");
+                SPKLog(@"General", @"[Sparkle] Hiding suggested users: follow list suggested user");
 
                 shouldHide = YES;
             }
@@ -131,7 +154,7 @@
 
             // See all suggested users
             else if ([obj isKindOfClass:%c(IGSeeAllItemConfiguration)] && ((IGSeeAllItemConfiguration *)obj).destination == 4) {
-                NSLog(@"[SCInsta] Hiding suggested users: follow list suggested user");
+                SPKLog(@"General", @"[Sparkle] Hiding suggested users: follow list suggested user");
 
                 shouldHide = YES;
             }
@@ -156,9 +179,9 @@
     for (IGStoryTrayViewModel *obj in originalObjs) {
         BOOL shouldHide = NO;
 
-        if ([SCIUtils getBoolPref:@"no_suggested_users"]) {
+        if (SPKHideFollowListSuggestedUsers()) {
             if ([obj isKindOfClass:%c(IGFindUsersViewController)]) {
-                NSLog(@"[SCInsta] Hiding suggested users: find users segmented tab");
+                SPKLog(@"General", @"[Sparkle] Hiding suggested users: find users segmented tab");
 
                 shouldHide = YES;
             }
@@ -177,7 +200,7 @@
 // Suggested subscriptions
 %hook IGFanClubSuggestedUsersDataSource
 - (id)initWithUserSession:(id)arg1 delegate:(id)arg2 {
-    if ([SCIUtils getBoolPref:@"no_suggested_users"]) {
+    if (SPKHideSubscriptionSuggestedUsers()) {
         return nil;
     }
 
@@ -195,11 +218,11 @@
     for (IGStoryTrayViewModel *obj in originalObjs) {
         BOOL shouldHide = NO;
 
-        if ([SCIUtils getBoolPref:@"no_suggested_users"]) {
+        if (SPKHideActivitySuggestedUsers()) {
 
             // Suggested user
             if ([obj isKindOfClass:%c(IGDiscoverPeopleItemConfiguration)]) {
-                NSLog(@"[SCInsta] Hiding suggested users: follow list suggested user");
+                SPKLog(@"General", @"[Sparkle] Hiding suggested users: follow list suggested user");
 
                 shouldHide = YES;
             }
@@ -243,7 +266,7 @@
     NSOrderedSet *allActions = [arg3 copy];
     NSOrderedSet *overflowActions = [arg4 copy];
 
-    if ([SCIUtils getBoolPref:@"no_suggested_users"]) {
+    if (SPKHideProfileSuggestedUsers()) {
         NSPredicate *predicate = [NSPredicate predicateWithFormat:@"NOT (SELF IN %@)", @[ @(3) ]];
         
         // Actions sets
@@ -261,3 +284,22 @@
     return %orig(arg1, rows, allActions, overflowActions, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
 }
 %end
+
+%end
+
+void SPKInstallNoSuggestedUsersHooksIfEnabled(void) {
+    if (!SPKHideFeedSuggestedUsers() &&
+        !SPKHideProfileSuggestedUsers() &&
+        !SPKHideActivitySuggestedUsers() &&
+        !SPKHideFollowListSuggestedUsers() &&
+        !SPKHideSubscriptionSuggestedUsers()) {
+        return;
+    }
+
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        %init(SPKNoSuggestedUsersHooks,
+              IGSuggestionsUnitViewModel = SPKResolveIGClass(@"IGSuggestionsUnit.IGSuggestionsUnitViewModel", @"IGSuggestionsUnitViewModel"),
+              IGProfileHeaderView = SPKResolveIGClass(@"IGProfileHeader.IGProfileHeaderView", @"IGProfileHeaderView"));
+    });
+}

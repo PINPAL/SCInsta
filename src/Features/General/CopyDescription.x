@@ -1,12 +1,13 @@
 #import "../../Utils.h"
 #import "../../InstagramHeaders.h"
-#import "../../../modules/JGProgressHUD/JGProgressHUD.h"
+
+%group SPKCopyDescriptionHooks
 
 %hook IGCoreTextView
 - (void)didMoveToSuperview {
     %orig;
 
-    if ([SCIUtils getBoolPref:@"copy_description"]) {
+    if ([SPKUtils getBoolPref:@"general_copy_text"]) {
         [self addHandleLongPress];
     }
 
@@ -33,18 +34,23 @@
                                                    withTemplate:@""]
           stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
 
-    NSLog(@"[SCInsta] Copying description");
+    SPKLog(@"General", @"[Sparkle] Copying description");
 
     // Copy text to system clipboard
     UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
     pasteboard.string = result;
 
-    // Notify user
-    JGProgressHUD *HUD = [[JGProgressHUD alloc] init];
-    HUD.textLabel.text = @"Copied text to clipboard";
-    HUD.indicatorView = [[JGProgressHUDSuccessIndicatorView alloc] init];
-    
-    [HUD showInView:topMostController().view];
-    [HUD dismissAfterDelay:2.0];
+    SPKNotify(kSPKNotificationCopyDescription, @"Copied text to clipboard", nil, @"circle_check_filled", SPKNotificationToneSuccess);
 }
 %end
+
+%end
+
+void SPKInstallCopyDescriptionHooksIfEnabled(void) {
+    if (![SPKUtils getBoolPref:@"general_copy_text"]) return;
+
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        %init(SPKCopyDescriptionHooks);
+    });
+}
